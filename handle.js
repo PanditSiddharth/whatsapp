@@ -117,8 +117,23 @@ const forwardMessage = async (fromNumber, targetNumber, message) => {
 const handle = async (req) => {
     const phoneNumber = getUserPhone(req);
     const text = getMessageText(req);
+    
+    // Add debug logging
+    console.log('Incoming message details:', {
+        phoneNumber,
+        text,
+        body: req.body
+    });
 
-    if (!phoneNumber || !text) return null;
+    if (!phoneNumber) {
+        console.log('No phone number found in request');
+        return null;
+    }
+
+    if (!text) {
+        console.log('No text found in request');
+        return null;
+    }
 
     // Check if this is a forward request
     if (phoneNumber === '916389680622' && text.startsWith('send ')) {

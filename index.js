@@ -63,13 +63,26 @@ async function sendTypingIndicator(req) {
 
 app.post("/", async (req, res) => {
   try {
-    if (!getUserPhone(req) || !getMessageId(req) || !getMessageText(req)) 
+    console.log('Received webhook:', JSON.stringify(req.body, null, 2));
+    
+    if (!getUserPhone(req)) {
+      console.log('No phone number found');
       return res.sendStatus(200);
-        // To start typing indicator
-sendTypingIndicator(req);
+    }
+    
+    if (!getMessageText(req)) {
+      console.log('No message text found');
+      return res.sendStatus(200);
+    }
+
+    // Start typing indicator
+    await sendTypingIndicator(req);
+    
     const data = await handle(req);
-    if (!data)
+    if (!data) {
+      console.log('No response data generated');
       return res.sendStatus(200);
+    }
     const { phoneNumber, aiResponse } = data;
 
       const url = `https://graph.facebook.com/${META_API_VERSION}/${PHONE_NUMBER_ID}/messages`;
@@ -86,8 +99,9 @@ sendTypingIndicator(req);
 
       return res.sendStatus(200);
   } catch (error) {
-    console.error('Error details:', {
+    console.error('Detailed error:', {
       message: error.message,
+      stack: error.stack,
       response: error.response?.data,
       status: error.response?.status,
       payload: error.config?.data
