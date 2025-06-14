@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Conversation = require('./models/conversation');
-const { getUserPhone } = require("./utilities");
+const { getUserPhone, getMessageId, getMessageText } = require("./utilities");
 const handle = require("./handle");
 
 app.use(express.json());
@@ -38,14 +38,40 @@ app.get("/", (req, res) => {
 
 
 
+async function sendTypingIndicator(req) {
+  try {
+    await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/${META_API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+  "messaging_product": "whatsapp",
+  "status": "read",
+  "message_id": getMessageId(req),
+  "typing_indicator": {
+    "type": "text"
+  }
+    }});
+  
+  } catch (error) {
+    console.error('Error sending typing indicator:', error);
+  }
+}
+
 app.post("/", async (req, res) => {
   try {
-    if (!getUserPhone(req)) 
+    if (!getUserPhone(req) || !getMessageId(req) || !getMessageText(req)) 
       return res.sendStatus(200);
+        // To start typing indicator
+sendTypingIndicator(req);
     const data = await handle(req);
     if (!data)
       return res.sendStatus(200);
     const { phoneNumber, aiResponse } = data;
+
       const url = `https://graph.facebook.com/${META_API_VERSION}/${PHONE_NUMBER_ID}/messages`;
       await axios.post(url, {
         messaging_product: 'whatsapp',
