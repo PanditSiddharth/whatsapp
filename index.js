@@ -15,7 +15,7 @@ const token = process.env.WEBHOOK_TOKEN || "token";
 const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
 const META_API_VERSION = 'v22.0';
-const PHONE_NUMBER_ID = '634437293095412';
+const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID || '1234567890';
 
 
 app.get("/", (req, res) => {

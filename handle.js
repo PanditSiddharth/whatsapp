@@ -1,3 +1,4 @@
+require('dotenv').config();
 const axios = require('axios');
 const Conversation = require("./models/conversation");
 const { getUserPhone, getMessageText } = require("./utilities");
@@ -57,10 +58,56 @@ Aur yha se jo user tumse whatsapp pe bat kar rha us user ki detials:
     return null;
 };
 
+// Add new function to send WhatsApp messages
+const sendWhatsAppMessage = async (to, message) => {
+    const url = `https://graph.facebook.com/v22.0/${process.env.PHONE_NUMBER_ID}/messages`;
+    try {
+        await axios.post(url, {
+            messaging_product: 'whatsapp',
+            to: to,
+            text: { body: message }
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        return true;
+    } catch (error) {
+        console.error('Error sending WhatsApp message:', error);
+        return false;
+    }
+};
+
+// Add message forwarding function
+const forwardMessage = async (fromNumber, targetNumber, message) => {
+    if (fromNumber === '916389680622') {
+        if (message.startsWith('send ')) {
+            const parts = message.split(' ');
+            if (parts.length >= 3) {
+                const targetPhone = parts[1];
+                const messageToSend = parts.slice(2).join(' ');
+                await sendWhatsAppMessage(targetPhone, messageToSend);
+                // Send confirmation back to original sender
+                await sendWhatsAppMessage(fromNumber, 'Message forwarded successfully!');
+            }
+        }
+    }
+};
+
+// Modify handle function to include message forwarding
 const handle = async (req) => {
     const phoneNumber = getUserPhone(req);
     const text = getMessageText(req);
+    
     if (!phoneNumber || !text) return null;
+    
+    // Check if this is a forward request
+    if (phoneNumber === '916389680622' && text.startsWith('send ')) {
+        await forwardMessage(phoneNumber, null, text);
+        return null;
+    }
+
     await require("./connect")(); // Ensure database connection is established
 
     let conversation = await Conversation.findOne({ phoneNumber });
