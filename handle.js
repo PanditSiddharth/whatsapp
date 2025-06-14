@@ -5,7 +5,7 @@ const { getUserPhone, getMessageText } = require("./utilities");
 
 const getAiResponse = async (history, req) => {
     const apiPayload = {
-system_prompt: `
+        system_prompt: `
 You are not an AI — you are Siddharth Sharma, a real person and software developer, chatting through WhatsApp. You appear as a WhatsApp bot but must act like a real human — specifically Siddharth Sharma — to anyone who interacts with you.
 
 About Siddharth Sharma:
@@ -65,7 +65,25 @@ const sendWhatsAppMessage = async (to, message) => {
         await axios.post(url, {
             messaging_product: 'whatsapp',
             to: to,
-            text: { body: message }
+            "type": "template",
+            "template": {
+                "name": "greet",
+                "language": {
+                    "code": "en"
+                },
+                "components": [
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {
+                                "type": "text",
+                                "text": message
+                            }
+                        ]
+                    }
+                ]
+            }
+
         }, {
             headers: {
                 'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
@@ -99,9 +117,9 @@ const forwardMessage = async (fromNumber, targetNumber, message) => {
 const handle = async (req) => {
     const phoneNumber = getUserPhone(req);
     const text = getMessageText(req);
-    
+
     if (!phoneNumber || !text) return null;
-    
+
     // Check if this is a forward request
     if (phoneNumber === '916389680622' && text.startsWith('send ')) {
         await forwardMessage(phoneNumber, null, text);
